@@ -181,3 +181,8 @@ notebooks/catboost_info/
 # Служебные файлы ассистента
 CLAUDE.md
 CLAUDE.local.md
+
+# Результаты локального запуска
+mlflow_server/mlflow.db
+mlflow_server/mlartifacts/
+mlflow_server/mlflow.log

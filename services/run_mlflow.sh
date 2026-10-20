@@ -1,30 +1,18 @@
 #!/usr/bin/env bash
 # Запуск MLflow Tracking Server и Model Registry.
-# Доступы к S3 и PostgreSQL читаются из файла services/.env (шаблон: services/.env.example).
+# Метаданные хранятся в SQLite (mlflow_server/mlflow.db), артефакты в папке mlflow_server/mlartifacts
+# и отдаются клиентам самим сервером, поэтому ноутбуки логируют модели по HTTP без доступа к диску сервера.
 set -euo pipefail
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
-set -a
-source .env
-set +a
-
-: "${MLFLOW_S3_ENDPOINT_URL:?не задана в .env}"
-: "${AWS_ACCESS_KEY_ID:?не задана в .env}"
-: "${AWS_SECRET_ACCESS_KEY:?не задана в .env}"
-: "${BUCKET:?не задана в .env}"
-: "${DB_DESTINATION_HOST:?не задана в .env}"
-: "${DB_DESTINATION_PORT:?не задана в .env}"
-: "${DB_DESTINATION_NAME:?не задана в .env}"
-: "${DB_DESTINATION_USER:?не задана в .env}"
-: "${DB_DESTINATION_PASSWORD:?не задана в .env}"
-
-DB_URI="postgresql://${DB_DESTINATION_USER}:${DB_DESTINATION_PASSWORD}@${DB_DESTINATION_HOST}:${DB_DESTINATION_PORT}/${DB_DESTINATION_NAME}"
+mkdir -p mlflow_server/mlartifacts
 
 mlflow server \
-    --registry-store-uri "${DB_URI}" \
-    --backend-store-uri "${DB_URI}" \
-    --default-artifact-root "s3://${BUCKET}" \
+    --backend-store-uri "sqlite:///mlflow_server/mlflow.db" \
+    --registry-store-uri "sqlite:///mlflow_server/mlflow.db" \
+    --default-artifact-root "mlflow-artifacts:/" \
+    --artifacts-destination "./mlflow_server/mlartifacts" \
+    --serve-artifacts \
     --host 0.0.0.0 \
-    --port 5000 \
-    --no-serve-artifacts
+    --port "${MLFLOW_PORT:-5000}"

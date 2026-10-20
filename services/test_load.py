@@ -14,7 +14,7 @@ def post(payload: dict) -> int:
 
 
 def main() -> None:
-    ok_payload = {"user_id": 15896, "month": "2016-01", "k": 5}
+    ok_payload = {"user_id": 15889, "month": "2016-01", "k": 5}
     bad_payload = {"user_id": "abc", "month": "2016-01", "k": 5}
 
     print("Smoke test: OK request")

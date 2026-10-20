@@ -1,0 +1,11 @@
+# Окружение для ноутбуков, обучения и тестов; зависимости сервиса подключаются из services/requirements.txt
+-r services/requirements.txt
+mlflow==2.7.1
+implicit==0.7.2
+scipy==1.11.3
+scikit-learn==1.3.1
+matplotlib==3.8.4
+seaborn==0.13.0
+jupyterlab==4.0.7
+pytest==8.2.2
+httpx==0.27.0

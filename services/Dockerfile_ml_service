@@ -1,28 +1,22 @@
-# Базовый образ
 FROM python:3.10-slim
 
-# Значения по умолчанию (могут быть переопределены через --env-file)
-ENV APP_PORT=8081
-ENV AUTHOR="mle-student"
+# Порт сервиса внутри контейнера (можно переопределить переменной окружения)
+ENV APP_PORT=8081 \
+    PYTHONUNBUFFERED=1
 
-LABEL author=${AUTHOR}
+# libgomp1 нужна CatBoost
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Рабочая директория внутри контейнера
 WORKDIR /app
 
-# Копируем requirements
 COPY requirements.txt ./requirements.txt
-
-# Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем код микросервиса и модель
+# Код микросервиса; модель (models) и таблицы (assets) подключаются томами в docker-compose.yaml
 COPY ml_service ./services/ml_service
-# COPY models ./services/models
-# COPY assets ./services/assets
 
-# Документируем внутренний порт
 EXPOSE ${APP_PORT}
 
-# Команда запуска FastAPI приложения
 CMD uvicorn services.ml_service.main_monitoring:app --host 0.0.0.0 --port ${APP_PORT}

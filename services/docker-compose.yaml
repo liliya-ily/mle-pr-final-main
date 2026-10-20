@@ -1,18 +1,25 @@
-version: "3.9"
-
 services:
   ml_service:
     build:
       context: .
       dockerfile: Dockerfile_ml_service
-    env_file:
-      - ./.env
     ports:
       - "4601:8081"
+    volumes:
+      # модель и таблицы создаёт ноутбук notebooks/02_modeling.ipynb
+      - ./models:/app/services/models:ro
+      - ./assets:/app/services/assets:ro
     hostname: ml_service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/metrics')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v2.53.1
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
@@ -20,18 +27,24 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     hostname: prometheus
+    restart: unless-stopped
     depends_on:
-      - ml_service
+      ml_service:
+        condition: service_healthy
 
-  # grafana:
-  #   image: grafana/grafana
-  #   env_file:
-  #     - ./.env
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
-  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
-  #   hostname: grafana
-  #   depends_on:
-  #     - prometheus
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS:-admin}
+    volumes:
+      # источник данных и дашборд подключаются автоматически
+      - ./grafana/provisioning/datasources/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana/provisioning/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    hostname: grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus

@@ -1,0 +1,8 @@
+.git
+data/
+mlflow_server/mlartifacts/
+mlflow_server/mlflow.db
+services/assets/
+**/__pycache__/
+**/catboost_info/
+**/.ipynb_checkpoints/

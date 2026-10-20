@@ -67,7 +67,6 @@ curl -s http://localhost:4601/metrics | grep process_virtual_memory_bytes
 - ok
 - validation_error
 - model_error
-- load_error
 
 Метрика инкрементируется из кода сервиса при каждом обращении.
 
@@ -79,7 +78,7 @@ curl -s http://localhost:4601/metrics | grep recommend_requests_total
 
 Успешный запрос:
 ```
-curl -X POST http://localhost:4601/recommend   -H "Content-Type: application/json"   -d '{"user_id": 15896, "month": "2016-01", "k": 5}'
+curl -X POST http://localhost:4601/recommend   -H "Content-Type: application/json"   -d '{"user_id": 15889, "month": "2016-01", "k": 5}'
 ```
 Ошибка валидации:
 ```
@@ -107,6 +106,21 @@ curl -X POST http://localhost:4601/recommend   -H "Content-Type: application/jso
 ```
 sum(rate(http_requests_total[1m])) by (status)
 ```
+---
+
+## 4. Дашборд Grafana
+
+Источник данных (Prometheus) и дашборд подключаются при старте автоматически
+(`services/grafana/`). Grafana: http://localhost:3000 (по умолчанию admin / admin), дашборд
+«Рекомендации банковских продуктов». Панели:
+
+| Панель | Запрос | Вопрос, на который отвечает |
+|---|---|---|
+| Запросы в секунду по статусам (time series) | `sum(rate(recommend_requests_total[1m])) by (status)` | сколько запросов обрабатывается и растёт ли доля ошибок |
+| Ошибки за 5 минут (bar chart) | `sum(increase(recommend_requests_total{status!="ok"}[5m])) by (status)` | какие ошибки случились недавно: валидация (клиент) или модель (сервис) |
+| Задержка ответа `/recommend`, p50 и p95 (time series) | `histogram_quantile(...)` по `http_request_duration_seconds_bucket` | не замедляется ли сервис |
+| Память процесса (gauge) | `process_resident_memory_bytes` | нет ли утечки памяти и близок ли сервис к лимиту |
+
 ---
 
 ## Генерация нагрузки
